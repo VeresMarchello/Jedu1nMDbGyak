@@ -1,0 +1,71 @@
+xquery version "3.1";
+let $cars := doc('https://raw.githubusercontent.com/altova/XPath-XQuery-SQL-Tutorial/master/data/Cars.xml')/CarsDB/Car
+let $val:=
+for $c in $cars
+ let $a:=xs:integer($c/YearTill)-xs:integer($c/YearFrom)
+ return 
+    $a
+return <Atlagos-piacon-toltott-evek-szama> {avg($val)} </Atlagos-piacon-toltott-evek-szama>
+
+let $cars := doc('https://raw.githubusercontent.com/altova/XPath-XQuery-SQL-Tutorial/master/data/Cars.xml')/CarsDB/Car
+let $man := doc('https://raw.githubusercontent.com/altova/XPath-XQuery-SQL-Tutorial/master/data/Cars_Manufacturer_Countries.xml')/CCDB/CarCountry
+for $res in 
+(for $c in $cars[Fuel eq 'Diesel'], $m in $man
+where distinct-values($c/Manufacturer) eq $m/Manufacturer
+group by $country := $m/Country
+order by  count($c/Model) descending
+return 
+    <country name="{$country}"> 
+    {count($c/Model)}
+    </country>) [position() = 1 to 5]
+return $res
+
+declare function local:calcDiscount($year)
+as xs:decimal? {
+    let $currentYear:= fn:year-from-date(fn:current-date())
+    let $discount := ( (xs:integer($currentYear)-xs:integer($year)) * 0.02) 
+    return $discount
+};
+let $cars := doc('https://raw.githubusercontent.com/altova/XPath-XQuery-SQL-Tutorial/master/data/Cars.xml')/CarsDB/Car
+for $c in $cars
+return ( 
+    <Car>
+        <Model> {$c/Model/text()} </Model>
+        <Discount> {local:calcDiscount($c/YearFrom)*100}% </Discount>
+    </Car>)
+
+xquery version "3.1";
+let $ett := doc("https://raw.githubusercontent.com/VeresMarchello/Jedu1nMDbGyak/main/03.02/VE_XML.xml")/JEDU1N
+for $r in $ett/rendeles, $v in $ett/vendeg
+where $r/@fk_vkod eq $v/@vkod and $r/@fk_ekod
+group by $vendeg := $r/@fk_vkod
+return 
+    <Tartozas>
+    <Vendeg>    {$v/nev/text()} 
+    </Vendeg>
+    <Fizetendo-osszeg> {sum($r/osszeg)} </Fizetendo-osszeg>
+    </Tartozas>
+
+    let $ett := doc('etterem.xml')/DW9YG6
+let $result := 
+for $r in $ett/rendeles, $v in $ett/vendeg, $e in $ett/etterem
+where $r/@fk_vkod eq $v/@vkod and $r/@fk_ekod eq $e/@ekod
+return  
+<res> 
+    <ett>{$e} </ett>
+    <vendeg>{$v} </vendeg>
+    <rendeles> {$r} </rendeles>
+</res>
+let $szamla:= 
+for $n in 1 to count($result)
+let $date:= current-dateTime()
+return 
+    <Szamla szkod="{$n}" fk_ekod="{$result[position()=$n]/ett/etterem/@ekod}" fk_vkod="{$result[position()=$n]/vendeg/vendeg/@vkod}">
+    <Fizetendo-osszeg> {$result[position()=$n]/rendeles/rendeles/osszeg/text()} </Fizetendo-osszeg>
+    <Dátum> {$date} </Dátum>
+</Szamla>
+return $szamla
+
+let $ett := doc('etterem.xml')/DW9YG
+for $sz in $ett/Szamla[@fk_ekod eq "e2"]
+return update delete $sz
