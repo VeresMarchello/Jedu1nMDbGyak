@@ -1,0 +1,87 @@
+db.createCollection("auto")
+use auto
+db.auto.insert({'tipus' : 'Opel', 'szin' : 'piros' , 'ár' : 500011, 'gyév':2001});
+db.auto.insert({'tipus' : 'Suzuki', 'szin' : 'sárga' , 'ár' : 600000, 'gyév':2005, "állapot" : "jó"});
+db.auto.find();
+
+db.auto.insertMany([{'tipus' : 'Suzuki', 'szin' : 'sárga' , 'ár' : 600000, 'gyév':2005} ,
+{'tipus' : 'Toyota', 'szin' : 'fehér' , 'ár' : 1600000, 'gyév':2010},
+{'tipus' : 'Wolkswagen', 'szin' : 'zöld' , 'ár' : 904000, 'gyév':2007},
+'tipus' : 'Audi', 'szin' : 'kék' , 'ár' : 3220000, 'gyév':2014},
+'tipus' : 'Opel', 'szin' : 'piros' , 'ár' : 500011, 'gyév':2001}] );
+
+db.auto.find({'ár' : {'$gt': 1000000}},{'tipus' : 1 , _id : 0}).count();
+
+db.auto.updateMany ({},{"$set":{"állapot": "jó"}})
+
+db.auto.updateMany ({"gyév" : {"$lt" : 2004}},{"$set":{"állapot": "sérült"}})
+db.auto.deleteMany({"állapot" : "sérült"});
+
+db.auto.insertMany([{'tipus' : 'Suzuki', 'szin' : 'sárga' , 'ár' : 600000, 'gyév':2005} ,
+{'tipus' : 'Toyota', 'szin' : 'fehér' , 'ár' : 1600000, 'gyév':2010},
+{'tipus' : 'Wolkswagen', 'szin' : 'zöld' , 'ár' : 904000, 'gyév':2007},
+{'tipus' : 'Audi', 'szin' : 'kék' , 'ár' : 3220000, 'gyév':2014},
+{'tipus' : 'Opel', 'szin' : 'piros' , 'ár' : 500011, 'gyév':2001}] )
+db.auto.insertMany([{'tipus' : 'Opel', 'szin' : 'sárga' , 'ár' : 600000, 'gyév':2005} ,
+{'tipus' : 'Opel', 'szin' : 'fehér' , 'ár' : 1600000, 'gyév':2010},
+{'tipus' : 'Wolkswagen', 'szin' : 'zöld' , 'ár' : 904000, 'gyév':2007},
+{'tipus' : 'Toyota', 'szin' : 'kék' , 'ár' : 3220000, 'gyév':2014},
+{'tipus' : 'Toyota', 'szin' : 'piros' , 'ár' : 500011, 'gyév':2001}])
+
+db.createCollection(„tulajdonos”);
+
+db.system.js.save(
+{
+_id : "save_tulaj",
+value: function(id,nev, kor)
+{
+db.tulajdonos.insert({"_id": id, "név": nev, "kor": kor})
+}
+});
+db.loadServerScripts();
+save_tulaj("T5","Pál", 20);
+db.tulajdonos.find()
+
+db.system.js.save(
+{
+_id : "save_auto",
+value: function(tipus, szin, ar, gyart_ev, allapot , tulaj )
+{
+db.auto.insertOne({"tipus": tipus, "szin": szin, "ár": ar, "gyév": gyart_ev, "állapot": allapot, "tulaj":
+tulaj})
+}
+}
+);
+db.loadServerScripts();
+save_auto("A113","auto2","fehér",3241,2010, "jó", "T5");
+
+db.system.js.save(
+{
+_id : "getTulajByName",
+value: function(nev)
+{
+var n = db.tulajdonos.find({"név": nev})
+while(n.hasNext()){
+print(n.next());
+}
+}
+});
+
+var oi = db.tulajdonos.findOne({"név":"Pál"})
+db.auto.find({"tulaj":oi._id})
+
+db.auto.find().forEach(
+function(obj){
+if(obj.állapot == "sérült"){
+db.auto.update({_id: obj._id}, {$inc : {'ár': -300000}});
+}
+}
+);
+db.auto.find();
+
+db.auto.find({"$where" : function(){
+if(this.ár < 1000000 && this.gyév < 2010 )
+return true;
+else
+return false;
+}}).count()
